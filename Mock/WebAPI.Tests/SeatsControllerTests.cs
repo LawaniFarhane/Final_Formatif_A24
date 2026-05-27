@@ -64,7 +64,7 @@ public class SeatsControllerTests
 
         Assert.IsInstanceOfType(result.Result, typeof(NotFoundObjectResult));
         NotFoundObjectResult notFoundResult = (NotFoundObjectResult)result.Result!;
-        Assert.AreEqual("Could not find" + seatNumber, notFoundResult.Value);
+        Assert.AreEqual("Could not find " + seatNumber, notFoundResult.Value);
     }
 
     [TestMethod]

@@ -1,0 +1,16 @@
+
+Initial Chunk Files   | Names         |  Raw Size
+vendor.js             | vendor        |   2.33 MB |
+polyfills.js          | polyfills     | 332.07 kB |
+styles.css, styles.js | styles        | 229.35 kB |
+main.js               | main          |  14.38 kB |
+runtime.js            | runtime       |   6.52 kB |
+
+| Initial Total |   2.89 MB
+
+Build at: 2026-05-27T04:38:59.371Z - Hash: 503cb741d196fbd0 - Time: 3019ms
+
+** Angular Live Development Server is listening on 127.0.0.1:4200, open your browser on http://127.0.0.1:4200/ **
+
+
+√ Compiled successfully.

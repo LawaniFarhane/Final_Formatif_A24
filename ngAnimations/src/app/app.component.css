@@ -9,8 +9,8 @@ button{
 }
 
 .rotate-left {
-	-webkit-animation: rotate-left 1.0s cubic-bezier(0.455, 0.030, 0.515, 0.955) both;
-	animation: rotate-left 1.0s cubic-bezier(0.455, 0.030, 0.515, 0.955) both;
+	-webkit-animation: rotate-left 2.0s cubic-bezier(0.455, 0.030, 0.515, 0.955) both;
+	animation: rotate-left 2.0s cubic-bezier(0.455, 0.030, 0.515, 0.955) both;
 }
 
 /* ----------------------------------------------

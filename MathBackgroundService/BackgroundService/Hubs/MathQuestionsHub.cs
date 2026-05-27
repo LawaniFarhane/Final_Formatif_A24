@@ -41,8 +41,9 @@ public class MathQuestionsHub : Hub
         await base.OnDisconnectedAsync(exception);
     }
 
-    public void SelectChoice(int answerIndex)
+    public async Task SelectChoice(int answerIndex)
     {
-        _matchBackgroundService.SelectChoice(Context.UserIdentifier!, answerIndex);
+        // On attend que le BackgroundService ait envoyé le message SignalR avant de terminer l'appel du client.
+        await _matchBackgroundService.SelectChoice(Context.UserIdentifier!, answerIndex);
     }
 }

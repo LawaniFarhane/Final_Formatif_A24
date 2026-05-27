@@ -26,10 +26,14 @@ public class MathBackgroundService : BackgroundService
 
     private MathQuestionsService _mathQuestionsService;
 
-    public MathBackgroundService(IHubContext<MathQuestionsHub> mathQuestionHub, MathQuestionsService mathQuestionsService)
+    private IServiceScopeFactory _scopeFactory;
+
+    public MathBackgroundService(IHubContext<MathQuestionsHub> mathQuestionHub, MathQuestionsService mathQuestionsService, IServiceScopeFactory scopeFactory)
     {
         _mathQuestionHub = mathQuestionHub;
         _mathQuestionsService = mathQuestionsService;
+        // Le BackgroundService est un singleton, donc on garde le ScopeFactory pour créer un scope seulement quand on a besoin de la BD.
+        _scopeFactory = scopeFactory;
     }
 
     public void AddUser(string userId)
@@ -51,7 +55,7 @@ public class MathBackgroundService : BackgroundService
         }
     }
 
-    public async void SelectChoice(string userId, int choice)
+    public async Task SelectChoice(string userId, int choice)
     {
         if (_currentQuestion == null)
             return;
@@ -66,11 +70,18 @@ public class MathBackgroundService : BackgroundService
         _currentQuestion.PlayerChoices[choice]++;
 
         // TODO: Notifier les clients qu'un joueur a choisi une réponse
+        // On avise tous les clients du choix reçu pour que les badges se mettent à jour sans attendre la prochaine question.
+        await _mathQuestionHub.Clients.All.SendAsync("IncreasePlayersChoices", choice);
     }
 
     private async Task EvaluateChoices()
     {
         // TODO: La méthode va avoir besoin d'un scope
+        // On crée un scope parce que BackgroundServiceContext est scoped et ne peut pas être injecté directement dans ce singleton.
+        using var scope = _scopeFactory.CreateScope();
+        // On récupère un DbContext dans ce scope pour modifier les joueurs pendant l'évaluation des réponses.
+        BackgroundServiceContext context = scope.ServiceProvider.GetRequiredService<BackgroundServiceContext>();
+
         foreach (var userId in _data.Keys)
         {
             var userData = _data[userId];
@@ -78,13 +89,23 @@ public class MathBackgroundService : BackgroundService
             // TODO: Modifier et sauvegarder le NbRightAnswers des joueurs qui ont la bonne réponse
             if (userData.Choice == _currentQuestion!.RightAnswerIndex)
             {
+                // Le client connecté avec ce userId reçoit seulement son propre résultat.
+                await _mathQuestionHub.Clients.User(userId).SendAsync("RightAnswer");
 
+                // On met aussi la BD à jour pour que le score reste correct après un refresh de la page.
+                Player player = await context.Player.SingleAsync(p => p.UserId == userId);
+                player.NbRightAnswers++;
             }
             else
             {
+                // On envoie la valeur de la bonne réponse pour que le client puisse l'afficher dans son alert.
+                await _mathQuestionHub.Clients.User(userId).SendAsync("WrongAnswer", _currentQuestion.Answers[_currentQuestion.RightAnswerIndex]);
             }
 
         }
+        // On sauvegarde une seule fois après avoir évalué tous les joueurs qui avaient la bonne réponse.
+        await context.SaveChangesAsync();
+
         // Reset
         foreach (var key in _data.Keys)
         {

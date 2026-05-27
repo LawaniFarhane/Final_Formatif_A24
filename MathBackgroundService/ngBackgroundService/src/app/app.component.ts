@@ -1,5 +1,5 @@
 import { AccountService } from './services/account.service';
-import { Component, NgZone } from '@angular/core';
+import { Component } from '@angular/core';
 import { environment } from 'src/environments/environment';
 
 // On doit commencer par ajouter signalr dans les node_modules: npm install @microsoft/signalr
@@ -57,7 +57,7 @@ export class AppComponent {
 
   currentQuestion: MathQuestion | null = null;
 
-  constructor(public account: AccountService, private zone: NgZone) {}
+  constructor(public account: AccountService) {}
 
   selectChoice(choice: number) {
     this.selection = choice;
@@ -100,27 +100,33 @@ export class AppComponent {
     if (!this.hubConnection) return;
 
     this.hubConnection.on('PlayerInfo', (data: PlayerInfoDTO) => {
-      this.zone.run(() => {
-        console.log(data);
-        this.isConnected = true;
-        this.nbRightAnswers = data.nbRightAnswers;
-      });
+      console.log(data);
+      this.isConnected = true;
+      this.nbRightAnswers = data.nbRightAnswers;
     });
 
     this.hubConnection.on('CurrentQuestion', (data: MathQuestion) => {
-      this.zone.run(() => {
-        console.log(data);
-        this.selection = -1;
-        this.currentQuestion = data;
-      });
+      console.log(data);
+      this.selection = -1;
+      this.currentQuestion = data;
     });
 
     this.hubConnection.on('IncreasePlayersChoices', (choiceIndex: number) => {
-      this.zone.run(() => {
-        if (this.currentQuestion) {
-          this.currentQuestion.playerChoices[choiceIndex]++;
-        }
-      });
+      if (this.currentQuestion) {
+        this.currentQuestion.playerChoices[choiceIndex]++;
+      }
+    });
+
+    this.hubConnection.on('RightAnswer', () => {
+        // Le serveur confirme que ce joueur a eu la bonne réponse, donc on met son compteur local à jour tout de suite.
+      this.nbRightAnswers++;
+        // On affiche le résultat demandé dans l'énoncé dès que le message SignalR arrive.
+        alert('Bonne réponse !');
+    });
+
+    this.hubConnection.on('WrongAnswer', (rightAnswer: number) => {
+        // Le serveur envoie la bonne réponse pour que le message reste fiable même si la question change ensuite.
+        alert('Mauvaise réponse ! La bonne réponse était ' + rightAnswer);
     });
 
     this.hubConnection
